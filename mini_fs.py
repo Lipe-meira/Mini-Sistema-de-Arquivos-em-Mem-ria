@@ -12,9 +12,37 @@ class SistemaArquivos:
         self.root = No("/", "diretorio")
         self.atual = self.root
 
+    #pwd mostra o caminho completo da pasta atual
+    def pwd(self):
+        self.caminho = []
+        no = self.atual
+        while no is not None:
+            self.caminho.append(no.nome)
+            no = no.pai
+        self.caminho.reverse()
+        # junta os itens de um array em um string
+        return("/".join(self.caminho)) 
+
+    #ls lista os arquivos e diretorios da pasta atual
+    def ls(self):
+        for nome in self.atual.filhos:
+            if self.atual.filhos[nome].tipo == "diretorio":
+                print("[DIR] " + nome)
+            else:
+                print("[ARQ] " + nome)    
 
 fs = SistemaArquivos()
-print(fs.root.nome)      
-print(fs.root.tipo)       
-print(fs.root.filhos)   
-print(fs.atual == fs.root) 
+
+# cria um diretório filho manualmente
+pasta = No("documentos", "diretorio")
+pasta.pai = fs.root
+fs.root.filhos["documentos"] = pasta
+
+# cria um arquivo filho manualmente
+arq = No("notas.txt", "arquivo")
+arq.pai = fs.root
+fs.root.filhos["notas.txt"] = arq
+
+fs.ls()  # deve mostrar algo como:
+         # [DIR] documentos
+         # [ARQ] notas.txt
