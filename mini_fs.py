@@ -94,14 +94,16 @@ class SistemaArquivos:
             if self.atual.filhos[nome].tipo == "arquivo":
                 del self.atual.filhos[nome]
                 print("Arquivo removido com sucesso.")
-            elif self.atual.filhos[nome].tipo == "diretorio" and self.atual.filhos[nome].filhos == {}:
+            elif (
+                self.atual.filhos[nome].tipo == "diretorio"
+                and self.atual.filhos[nome].filhos == {}
+            ):
                 del self.atual.filhos[nome]
                 print("Diretorio removido com sucesso.")
             else:
                 print("[ERRO]: Diretório não está vazio.")
         else:
             print("[ERRO]: Arquivo ou diretório não encontrado.")
-
 
     def gerar_nome_copia(self, nome):
         # separa nome e extensão
@@ -145,10 +147,53 @@ class SistemaArquivos:
                 else:
                     self.atual.filhos[nomeArqDestino] = No(nomeArqDestino, "arquivo")
                 self.atual.filhos[nomeArqDestino].pai = self.atual
-                self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[nomeArqOrigem].conteudo
+                self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[
+                    nomeArqOrigem
+                ].conteudo
                 print("Arquivo copiado com sucesso.")
             else:
                 print("[ERRO]: Não é um arquivo.")
         else:
             print("[ERRO]: Arquivo não encontrado.")
+
+    # move o arquivo OU renomeia
+    def mv(self, origem, destino):
+        if origem not in self.atual.filhos:
+            print("[ERRO]: Arquivo ou diretório de origem não encontrado.")
+            return
+
+        no_origem = self.atual.filhos[origem]
+
+        # caso 1: destino existe
+        if destino in self.atual.filhos:
+            no_destino = self.atual.filhos[destino]
+
+            # se destino for diretório, move origem para dentro dele
+            if no_destino.tipo == "diretorio":
+                if origem in no_destino.filhos:
+                    print("[ERRO]: Já existe um item com esse nome no diretório de destino.")
+                    return
+
+                del self.atual.filhos[origem]
+
+                no_origem.pai = no_destino
+                no_destino.filhos[origem] = no_origem
+
+                print("Movido com sucesso.")
+                return
+
+            # se destino existe mas não é diretório, não pode sobrescrever
+            print("[ERRO]: Já existe um arquivo com esse nome.")
+            return
+
+        # caso 2: destino não existe, então renomeia
+        del self.atual.filhos[origem]
+
+        no_origem.nome = destino
+        no_origem.pai = self.atual
+        self.atual.filhos[destino] = no_origem
+
+        print("Renomeado com sucesso.")
+
+
 fs = SistemaArquivos()
