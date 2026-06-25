@@ -21,8 +21,9 @@ class SistemaArquivos:
             self.caminho.append(no.nome)
             no = no.pai
         self.caminho.reverse()
-        # junta os itens de um array em um string
-        return "/".join(self.caminho)
+        
+        # join junta os itens de um array em um string
+        return "/" + "/".join(self.caminho[1:])
 
     # ls lista os arquivos e diretorios da pasta atual
     def ls(self):
