@@ -7,12 +7,13 @@ class No:
         self.pai = None
         self.permissoes = "rwx"
 
+
 class SistemaArquivos:
     def __init__(self):
         self.root = No("/", "diretorio")
         self.atual = self.root
 
-    #pwd mostra o caminho completo da pasta atual
+    # pwd mostra o caminho completo da pasta atual
     def pwd(self):
         self.caminho = []
         no = self.atual
@@ -21,28 +22,40 @@ class SistemaArquivos:
             no = no.pai
         self.caminho.reverse()
         # junta os itens de um array em um string
-        return("/".join(self.caminho)) 
+        return "/".join(self.caminho)
 
-    #ls lista os arquivos e diretorios da pasta atual
+    # ls lista os arquivos e diretorios da pasta atual
     def ls(self):
         for nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "diretorio":
                 print("[DIR] " + nome)
             else:
-                print("[ARQ] " + nome)    
+                print("[ARQ] " + nome)
+
+    # cria pasta
+    def mkdir(self, nome):
+        if nome in self.atual.filhos:
+            print("Erro: Já existe um arquivo ou diretório com esse nome.")
+        else:
+            self.atual.filhos[nome] = No(nome, "diretorio")
+            self.atual.filhos[nome].pai = self.atual
+
+    # mudar de diretório/pasta.
+    def cd(self, nome):
+        if nome == "..":
+            if self.atual == self.root:
+                print("Erro: Já está no diretório raiz.")
+            else:
+                self.atual = self.atual.pai
+        elif nome == "/":
+            self.atual = self.root
+        elif nome in self.atual.filhos:
+            if self.atual.filhos[nome].tipo == "diretorio":
+                self.atual = self.atual.filhos[nome]
+            else:
+                print("Erro: Não é um diretório.")
+        else:
+            print("Erro: Diretório não encontrado.")
+
 
 fs = SistemaArquivos()
-
-# cria um diretório filho manualmente
-pasta = No("documentos", "diretorio")
-pasta.pai = fs.root
-fs.root.filhos["documentos"] = pasta
-
-# cria um arquivo filho manualmente
-arq = No("notas.txt", "arquivo")
-arq.pai = fs.root
-fs.root.filhos["notas.txt"] = arq
-
-fs.ls()  # deve mostrar algo como:
-         # [DIR] documentos
-         # [ARQ] notas.txt
