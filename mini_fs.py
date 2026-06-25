@@ -153,12 +153,17 @@ class SistemaArquivos:
                 if nomeArqOrigem == nomeArqDestino:
                     copia_nome = self.gerar_nome_copia(nomeArqOrigem)
                     self.atual.filhos[copia_nome] = No(copia_nome, "arquivo")
+                    self.atual.filhos[copia_nome].pai = self.atual
+                    self.atual.filhos[copia_nome].conteudo = self.atual.filhos[
+                        nomeArqOrigem
+                    ].conteudo
                 else:
                     self.atual.filhos[nomeArqDestino] = No(nomeArqDestino, "arquivo")
-                self.atual.filhos[nomeArqDestino].pai = self.atual
-                self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[
-                    nomeArqOrigem
-                ].conteudo
+                    self.atual.filhos[nomeArqDestino].pai = self.atual
+                    self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[
+                        nomeArqOrigem
+                    ].conteudo
+
                 print("Arquivo copiado com sucesso.")
             else:
                 print("[ERRO]: Não é um arquivo.")
@@ -221,3 +226,9 @@ class SistemaArquivos:
 
 
 fs = SistemaArquivos()
+
+fs.touch("a.txt")
+fs.echo("oi", "a.txt")
+fs.cp("a.txt", "a.txt")
+fs.ls()
+fs.cat("a_copia.txt")
