@@ -21,7 +21,7 @@ class SistemaArquivos:
             self.caminho.append(no.nome)
             no = no.pai
         self.caminho.reverse()
-        
+
         # join junta os itens de um array em um string
         return "/" + "/".join(self.caminho[1:])
 
@@ -35,12 +35,21 @@ class SistemaArquivos:
 
     # cria pasta
     def mkdir(self, nome):
+        # no linux nao da pra criar uma pasta com msm nome de um arquivo ou de outro DIR.
         if nome in self.atual.filhos:
             print("Erro: Já existe um arquivo ou diretório com esse nome.")
         else:
             self.atual.filhos[nome] = No(nome, "diretorio")
             self.atual.filhos[nome].pai = self.atual
 
+    # cria arquuivo
+    def touch(self, nome):
+        if nome in self.atual.filhos:
+            print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
+        else:
+            self.atual.filhos[nome] = No(nome, "arquivo")
+            self.atual.filhos[nome].pai = self.atual
+    
     # mudar de diretório/pasta.
     def cd(self, nome):
         if nome == "..":
@@ -48,6 +57,7 @@ class SistemaArquivos:
                 print("Erro: Já está no diretório raiz.")
             else:
                 self.atual = self.atual.pai
+        # nome da raiz
         elif nome == "/":
             self.atual = self.root
         elif nome in self.atual.filhos:
@@ -58,5 +68,23 @@ class SistemaArquivos:
         else:
             print("Erro: Diretório não encontrado.")
 
+    def echo(self, conteudo, nome):
+        if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
+            self.atual.filhos[nome].conteudo = conteudo
+        
+        # cria o arquivo e add conteudo
+        else:
+            if nome in self.atual.filhos:
+                print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
+            else:
+                self.atual.filhos[nome] = No(nome, "arquivo")
+                self.atual.filhos[nome].pai = self.atual
+                self.atual.filhos[nome].conteudo = conteudo
+
+    def cat(self, nome):
+        if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
+            print(self.atual.filhos[nome].conteudo)
+        else:
+            print("Erro: Arquivo não encontrado.")
 
 fs = SistemaArquivos()
