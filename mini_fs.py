@@ -49,7 +49,7 @@ class SistemaArquivos:
         else:
             self.atual.filhos[nome] = No(nome, "arquivo")
             self.atual.filhos[nome].pai = self.atual
-    
+
     # mudar de diretório/pasta.
     def cd(self, nome):
         if nome == "..":
@@ -68,11 +68,11 @@ class SistemaArquivos:
         else:
             print("Erro: Diretório não encontrado.")
 
+    # cria o arquivo e add conteudo
     def echo(self, conteudo, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             self.atual.filhos[nome].conteudo = conteudo
-        
-        # cria o arquivo e add conteudo
+
         else:
             if nome in self.atual.filhos:
                 print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
@@ -81,10 +81,74 @@ class SistemaArquivos:
                 self.atual.filhos[nome].pai = self.atual
                 self.atual.filhos[nome].conteudo = conteudo
 
+    # mostra o conteudo de um arquivo
     def cat(self, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             print(self.atual.filhos[nome].conteudo)
         else:
             print("Erro: Arquivo não encontrado.")
 
+    # deleta um arquivo
+    def rm(self, nome):
+        if nome in self.atual.filhos:
+            if self.atual.filhos[nome].tipo == "arquivo":
+                del self.atual.filhos[nome]
+                print("Arquivo removido com sucesso.")
+            elif self.atual.filhos[nome].tipo == "diretorio" and self.atual.filhos[nome].filhos == {}:
+                del self.atual.filhos[nome]
+                print("Diretorio removido com sucesso.")
+            else:
+                print("[ERRO]: Diretório não está vazio.")
+        else:
+            print("[ERRO]: Arquivo ou diretório não encontrado.")
+
+
+    def gerar_nome_copia(self, nome):
+        # separa nome e extensão
+        if "." in nome:
+            base, extensao = nome.rsplit(".", 1)
+            extensao = "." + extensao
+        else:
+            base = nome
+            extensao = ""
+
+        # se ainda não tem _copia, adiciona
+        if base.endswith("_copia"):
+            prefixo = base
+        else:
+            prefixo = base + "_copia"
+
+        novo_nome = prefixo + extensao
+
+        # se arquivo_copia.txt ainda não existe, usa ele
+        if novo_nome not in self.atual.filhos:
+            return novo_nome
+
+        # se já existe, começa a tentar (1), (2), (3)...
+        contador = 1
+
+        while 1 == 1:
+            novo_nome = prefixo + "(" + str(contador) + ")" + extensao
+
+            if novo_nome not in self.atual.filhos:
+                return novo_nome
+
+            contador += 1
+
+    # copiar, duplicar o arquivo alvo em outro lugar
+    def cp(self, nomeArqOrigem, nomeArqDestino):
+        if nomeArqOrigem in self.atual.filhos:
+            if self.atual.filhos[nomeArqOrigem].tipo == "arquivo":
+                if nomeArqOrigem == nomeArqDestino:
+                    copia_nome = self.gerar_nome_copia(nomeArqOrigem)
+                    self.atual.filhos[copia_nome] = No(copia_nome, "arquivo")
+                else:
+                    self.atual.filhos[nomeArqDestino] = No(nomeArqDestino, "arquivo")
+                self.atual.filhos[nomeArqDestino].pai = self.atual
+                self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[nomeArqOrigem].conteudo
+                print("Arquivo copiado com sucesso.")
+            else:
+                print("[ERRO]: Não é um arquivo.")
+        else:
+            print("[ERRO]: Arquivo não encontrado.")
 fs = SistemaArquivos()
