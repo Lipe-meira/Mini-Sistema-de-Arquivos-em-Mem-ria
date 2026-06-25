@@ -57,12 +57,16 @@ class SistemaArquivos:
                 print("Erro: Já está no diretório raiz.")
             else:
                 self.atual = self.atual.pai
+
         # nome da raiz
         elif nome == "/":
             self.atual = self.root
         elif nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "diretorio":
-                self.atual = self.atual.filhos[nome]
+                if "x" in self.atual.filhos[nome].permissoes:
+                    self.atual = self.atual.filhos[nome]
+                else:
+                    print("Erro: Sem permissão de entrada.")
             else:
                 print("Erro: Não é um diretório.")
         else:
@@ -71,8 +75,10 @@ class SistemaArquivos:
     # cria o arquivo e add conteudo
     def echo(self, conteudo, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
-            self.atual.filhos[nome].conteudo = conteudo
-
+            if "w" in self.atual.filhos[nome].permissoes:
+                self.atual.filhos[nome].conteudo = conteudo
+            else:
+                print("Erro: Sem permissão de escrita.")
         else:
             if nome in self.atual.filhos:
                 print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
@@ -84,7 +90,10 @@ class SistemaArquivos:
     # mostra o conteudo de um arquivo
     def cat(self, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
-            print(self.atual.filhos[nome].conteudo)
+            if "r" in self.atual.filhos[nome].permissoes:
+                print(self.atual.filhos[nome].conteudo)
+            else:
+                print("Erro: Sem permissão de leitura.")
         else:
             print("Erro: Arquivo não encontrado.")
 
@@ -212,11 +221,3 @@ class SistemaArquivos:
 
 
 fs = SistemaArquivos()
-
-fs.touch("a.txt")
-fs.chmod("r--", "a.txt")
-print(fs.atual.filhos["a.txt"].permissoes)
-
-fs.chmod("abc", "a.txt")
-fs.chmod("rw", "a.txt")
-fs.chmod("r-x", "a.txt")
