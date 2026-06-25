@@ -195,5 +195,28 @@ class SistemaArquivos:
 
         print("Renomeado com sucesso.")
 
+    # ordem do LINUX: chmod(novaPermissao, nome)
+    def chmod(self, novaPermissao, nome):
+        if nome in self.atual.filhos:
+            if len(novaPermissao) == 3:
+                if novaPermissao in ["rwx", "rw-", "r--", "r-x",
+                                    "-wx", "-w-", "--x", "---"]:
+                    self.atual.filhos[nome].permissoes = novaPermissao
+                    print("Permissao alterada com sucesso.")
+                else:
+                    print("[ERRO]: Permissão inválida.")
+            else:
+                print("[ERRO]: Permissão inválida.")
+        else:
+            print("[ERRO]: Arquivo ou diretório não encontrado.")
+
 
 fs = SistemaArquivos()
+
+fs.touch("a.txt")
+fs.chmod("r--", "a.txt")
+print(fs.atual.filhos["a.txt"].permissoes)
+
+fs.chmod("abc", "a.txt")
+fs.chmod("rw", "a.txt")
+fs.chmod("r-x", "a.txt")
