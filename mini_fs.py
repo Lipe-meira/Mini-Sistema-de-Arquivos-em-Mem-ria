@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 
 class No:
@@ -10,7 +10,9 @@ class No:
         self.conteudo = ""
         self.filhos = {}
         self.pai = None
-        self.permissoes = "rwx"
+        self.permissoes = 0o777
+        self.owner = "felipe"
+        self.group = "alunos"
         self.blocos = []
 
         # FCB
@@ -45,6 +47,55 @@ class SistemaArquivos:
         self.atual = self.root
         self.tamanho_bloco = 4
         self.disco = []
+        self.usuario_atual = "felipe"
+        self.grupo_atual = "alunos"
+
+    def obter_permissao_usuario(self, no):
+        if self.usuario_atual == no.owner:
+            deslocamento = 6
+        elif self.grupo_atual == no.group:
+            deslocamento = 3
+        else:
+            deslocamento = 0
+
+        return (no.permissoes >> deslocamento) & 0b111
+
+    def tem_permissao(self, no, permissao):
+        valores_permissao = {"r": 4, "w": 2, "x": 1}
+
+        if permissao not in valores_permissao:
+            return False
+
+        bits_usuario = self.obter_permissao_usuario(no)
+        valor_necessario = valores_permissao[permissao]
+        return (bits_usuario & valor_necessario) != 0
+
+    def permissoes_numericas(self, no):
+        return format(no.permissoes, "03o")
+
+    def permissoes_rwx(self, no):
+        texto = ""
+
+        for deslocamento in [6, 3, 0]:
+            bits = (no.permissoes >> deslocamento) & 0b111
+            texto += "r" if bits & 4 else "-"
+            texto += "w" if bits & 2 else "-"
+            texto += "x" if bits & 1 else "-"
+
+        return texto
+
+    def permissao_numerica_valida(self, permissao):
+        if len(permissao) != 3:
+            return False
+
+        if not permissao.isdigit():
+            return False
+
+        for digito in permissao:
+            if digito < "0" or digito > "7":
+                return False
+
+        return True
 
     def alocar_bloco(self, dados):
         for indice in range(len(self.disco)):
@@ -119,14 +170,14 @@ class SistemaArquivos:
     # cria arquuivo
     def touch(self, nome):
         if nome in self.atual.filhos:
-            print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
+            print("Erro: Já existe um arquivo ou diretório com esse nome.")
         else:
             self.atual.filhos[nome] = No(nome, "arquivo")
             self.atual.filhos[nome].pai = self.atual
             self.atual.atualizar_tamanho()
             self.atual.atualizar_modificacao()
 
-    # mudar de diretório/pasta.
+    # mudar de diretorio/pasta.
     def cd(self, nome):
         if nome == "..":
             if self.atual == self.root:
@@ -141,7 +192,7 @@ class SistemaArquivos:
             self.atual.atualizar_acesso()
         elif nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "diretorio":
-                if "x" in self.atual.filhos[nome].permissoes:
+                if self.tem_permissao(self.atual.filhos[nome], "x"):
                     self.atual = self.atual.filhos[nome]
                     self.atual.atualizar_acesso()
                 else:
@@ -154,13 +205,13 @@ class SistemaArquivos:
     # cria o arquivo e add conteudo
     def echo(self, conteudo, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
-            if "w" in self.atual.filhos[nome].permissoes:
+            if self.tem_permissao(self.atual.filhos[nome], "w"):
                 self.gravar_conteudo(self.atual.filhos[nome], conteudo)
             else:
                 print("Erro: Sem permissão de escrita.")
         else:
             if nome in self.atual.filhos:
-                print("[ERRO]: Já existe um arquivo ou diretório com esse nome.")
+                print("Erro: Já existe um arquivo ou diretório com esse nome.")
             else:
                 self.atual.filhos[nome] = No(nome, "arquivo")
                 self.atual.filhos[nome].pai = self.atual
@@ -171,7 +222,7 @@ class SistemaArquivos:
     # mostra o conteudo de um arquivo
     def cat(self, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
-            if "r" in self.atual.filhos[nome].permissoes:
+            if self.tem_permissao(self.atual.filhos[nome], "r"):
                 print(self.ler_conteudo(self.atual.filhos[nome]))
                 self.atual.filhos[nome].atualizar_acesso()
             else:
@@ -182,27 +233,33 @@ class SistemaArquivos:
     # deleta um arquivo
     def rm(self, nome):
         if nome in self.atual.filhos:
-            if self.atual.filhos[nome].tipo == "arquivo":
-                self.liberar_blocos(self.atual.filhos[nome])
+            no = self.atual.filhos[nome]
+
+            if not self.tem_permissao(no, "w"):
+                print("Erro: Sem permissão para remover.")
+                return
+
+            if no.tipo == "arquivo":
+                self.liberar_blocos(no)
                 del self.atual.filhos[nome]
                 self.atual.atualizar_tamanho()
                 self.atual.atualizar_modificacao()
                 print("Arquivo removido com sucesso.")
             elif (
-                self.atual.filhos[nome].tipo == "diretorio"
-                and self.atual.filhos[nome].filhos == {}
+                no.tipo == "diretorio"
+                and no.filhos == {}
             ):
                 del self.atual.filhos[nome]
                 self.atual.atualizar_tamanho()
                 self.atual.atualizar_modificacao()
                 print("Diretorio removido com sucesso.")
             else:
-                print("[ERRO]: Diretório não está vazio.")
+                print("Erro: Diretório não está vazio.")
         else:
-            print("[ERRO]: Arquivo ou diretório não encontrado.")
+            print("Erro: Arquivo ou diretório não encontrado.")
 
     def gerar_nome_copia(self, nome):
-        # separa nome e extensão
+        # separa nome e extensao
         if "." in nome:
             base, extensao = nome.rsplit(".", 1)
             extensao = "." + extensao
@@ -210,7 +267,7 @@ class SistemaArquivos:
             base = nome
             extensao = ""
 
-        # se ainda não tem _copia, adiciona
+        # se ainda nao tem _copia, adiciona
         if base.endswith("_copia"):
             prefixo = base
         else:
@@ -218,14 +275,14 @@ class SistemaArquivos:
 
         novo_nome = prefixo + extensao
 
-        # se arquivo_copia.txt ainda não existe, usa ele
+        # se arquivo_copia.txt ainda nao existe, usa ele
         if novo_nome not in self.atual.filhos:
             return novo_nome
 
-        # se já existe, começa a tentar (1), (2), (3)...
+        # se ja existe, começa a tentar (1), (2), (3)...
         contador = 1
 
-        while 1 == 1:
+        while True:
             novo_nome = prefixo + "(" + str(contador) + ")" + extensao
 
             if novo_nome not in self.atual.filhos:
@@ -239,6 +296,10 @@ class SistemaArquivos:
             if self.atual.filhos[nomeArqOrigem].tipo == "arquivo":
                 arquivo_origem = self.atual.filhos[nomeArqOrigem]
 
+                if not self.tem_permissao(arquivo_origem, "r"):
+                    print("Erro: Sem permissão de leitura.")
+                    return
+
                 if nomeArqOrigem == nomeArqDestino:
                     nome_final = self.gerar_nome_copia(nomeArqOrigem)
                 else:
@@ -248,7 +309,7 @@ class SistemaArquivos:
                     if self.atual.filhos[nome_final].tipo == "arquivo":
                         self.liberar_blocos(self.atual.filhos[nome_final])
                     else:
-                        print("[ERRO]: Já existe um diretório com esse nome.")
+                        print("Erro: Já existe um diretório com esse nome.")
                         return
 
                 self.atual.filhos[nome_final] = No(nome_final, "arquivo")
@@ -264,26 +325,34 @@ class SistemaArquivos:
 
                 print("Arquivo copiado com sucesso.")
             else:
-                print("[ERRO]: Não é um arquivo.")
+                print("Erro: Não é um arquivo.")
         else:
-            print("[ERRO]: Arquivo não encontrado.")
+            print("Erro: Arquivo não encontrado.")
 
     # move o arquivo OU renomeia
     def mv(self, origem, destino):
         if origem not in self.atual.filhos:
-            print("[ERRO]: Arquivo ou diretório de origem não encontrado.")
+            print("Erro: Arquivo ou diretório de origem não encontrado.")
             return
 
         no_origem = self.atual.filhos[origem]
+
+        if not self.tem_permissao(no_origem, "w"):
+            print("Erro: Sem permissão para mover ou renomear.")
+            return
 
         # caso 1: destino existe
         if destino in self.atual.filhos:
             no_destino = self.atual.filhos[destino]
 
-            # se destino for diretório, move origem para dentro dele
+            # se destino for diretorio, move origem para dentro dele
             if no_destino.tipo == "diretorio":
+                if not self.tem_permissao(no_destino, "w"):
+                    print("Erro: Sem permissão de escrita no diretório de destino.")
+                    return
+
                 if origem in no_destino.filhos:
-                    print("[ERRO]: Já existe um item com esse nome no diretório de destino.")
+                    print("Erro: Já existe um item com esse nome no diretório de destino.")
                     return
 
                 del self.atual.filhos[origem]
@@ -300,10 +369,14 @@ class SistemaArquivos:
                 return
 
             # se destino existe mas não é diretório, não pode sobrescrever
-            print("[ERRO]: Já existe um arquivo com esse nome.")
+            print("Erro: Já existe um arquivo com esse nome.")
             return
 
         # caso 2: destino não existe, então renomeia
+        if not self.tem_permissao(self.atual, "w"):
+            print("Erro: Sem permissão de escrita no diretório atual.")
+            return
+
         del self.atual.filhos[origem]
 
         no_origem.nome = destino
@@ -316,26 +389,24 @@ class SistemaArquivos:
 
     # ordem do LINUX: chmod(novaPermissao, nome)
     def chmod(self, novaPermissao, nome):
-        if nome in self.atual.filhos:
-            if len(novaPermissao) == 3:
-                if novaPermissao in ["rwx", "rw-", "r--", "r-x",
-                                    "-wx", "-w-", "--x", "---"]:
-                    self.atual.filhos[nome].permissoes = novaPermissao
-                    self.atual.filhos[nome].atualizar_modificacao()
-                    print("Permissao alterada com sucesso.")
-                else:
-                    print("[ERRO]: Permissão inválida.")
-            else:
-                print("[ERRO]: Permissão inválida.")
-        else:
-            print("[ERRO]: Arquivo ou diretório não encontrado.")
+        if nome not in self.atual.filhos:
+            print("Erro: Arquivo ou diretorio nao encontrado.")
+            return
+
+        if not self.permissao_numerica_valida(novaPermissao):
+            print("Erro: Permissao invalida.")
+            return
+
+        self.atual.filhos[nome].permissoes = int(novaPermissao, 8)
+        self.atual.filhos[nome].atualizar_modificacao()
+        print("Permissao alterada com sucesso.")
 
     def formatar_data(self, data):
         return data.strftime("%Y-%m-%d %H:%M:%S")
 
     def stat(self, nome):
         if nome not in self.atual.filhos:
-            print("[ERRO]: Arquivo ou diretório não encontrado.")
+            print("[ERRO]: Arquivo ou diretorio nao encontrado.")
             return
 
         no = self.atual.filhos[nome]
@@ -346,7 +417,10 @@ class SistemaArquivos:
         print("Tipo: " + no.tipo)
         print("Tipo de dado: " + no.tipo_dado)
         print("Tamanho: " + str(no.tamanho))
-        print("Permissoes: " + no.permissoes)
+        print("Permissões numéricas: " + self.permissoes_numericas(no))
+        print("Permissões RWX: " + self.permissoes_rwx(no))
+        print("Owner: " + no.owner)
+        print("Grupo: " + no.group)
         print("Blocos: " + str(no.blocos))
         print("Criado em: " + self.formatar_data(no.data_criacao))
         print("Modificado em: " + self.formatar_data(no.data_modificacao))
@@ -399,7 +473,7 @@ def terminal():
             if len(partes) < 2:
                 print("Erro: use mkdir <nome>")
             elif len(partes) > 2:
-                print("Erro: o nome do diretório não pode conter espaços.")
+                print("Erro: o nome do diretorio nao pode conter espacos.")
             else:
                 fs.mkdir(partes[1])
 
@@ -407,7 +481,7 @@ def terminal():
             if len(partes) < 2:
                 print("Erro: use cd <diretorio>")
             elif len(partes) > 2:
-                print("Erro: o nome do diretório não pode conter espaços.")
+                print("Erro: o nome do diretorio nao pode conter espacos.")
             else:
                 fs.cd(partes[1])
 
@@ -415,7 +489,7 @@ def terminal():
             if len(partes) < 2:
                 print("Erro: use touch <arquivo>")
             elif len (partes) > 2:
-                print("Erros: o nome do arquivo não pode conter espaços.")
+                print("Erros: o nome do arquivo nao pode conter espacos.")
             else:
                 fs.touch(partes[1])
 
@@ -423,7 +497,7 @@ def terminal():
             if len(partes) < 2:
                 print("Erro: use cat <arquivo>")
             elif len(partes) > 2:
-                print("Erro: o nome do arquivo não pode conter espaços.")
+                print("Erro: o nome do arquivo nao pode conter espacos.")
             else:
                 fs.cat(partes[1])
 
@@ -431,7 +505,7 @@ def terminal():
             if len(partes) < 2:
                 print("Erro: use stat <arquivo_ou_diretorio>")
             elif len(partes) > 2:
-                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+                print("Erro: o nome do arquivo ou diretorio nao pode conter espacos.")
             else:
                 fs.stat(partes[1])
 
@@ -454,7 +528,7 @@ def terminal():
                 print("Erro: informe o nome do arquivo depois do >")
 
             elif indice + 2 < len(partes):
-                print("Erro: o nome do arquivo não pode conter espaços.")
+                print("Erro: o nome do arquivo nao pode conter espacos.")
                 
             else:
                 texto = " ".join(partes[1:indice])
@@ -466,7 +540,7 @@ def terminal():
                 print("Erro: use rm <arquivo_ou_diretorio>")
 
             elif len(partes) > 2:
-                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+                print("Erro: o nome do arquivo ou diretorio nao pode conter espacos.")
             else:
                 fs.rm(partes[1])
 
@@ -474,7 +548,7 @@ def terminal():
             if len(partes) < 3:
                 print("Erro: use cp <origem> <destino>")
             elif len(partes) > 3:
-                print("Erro: o nome do arquivo não pode conter espaços.")
+                print("Erro: o nome do arquivo nao pode conter espacos.")
             else:
                 fs.cp(partes[1], partes[2])
 
@@ -482,7 +556,7 @@ def terminal():
             if len(partes) < 3:
                 print("Erro: use mv <origem> <destino>")
             elif len(partes) > 3:
-                print("Erro: o nome do arquivo não pode conter espaços.")
+                print("Erro: o nome do arquivo nao pode conter espacos.")
             else:
                 fs.mv(partes[1], partes[2])
 
@@ -490,12 +564,12 @@ def terminal():
             if len(partes) < 3:
                 print("Erro: use chmod <permissao> <arquivo_ou_diretorio>")
             elif len(partes) > 3:
-                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+                print("Erro: o nome do arquivo ou diretorio nao pode conter espacos.")
             else:
                 fs.chmod(partes[1], partes[2])
 
         else:
-            print("Comando não reconhecido.")
+            print("Comando nao reconhecido.")
 
 if __name__ == "__main__":
     terminal()
