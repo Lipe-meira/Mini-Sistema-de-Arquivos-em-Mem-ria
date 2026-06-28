@@ -96,6 +96,17 @@ class SistemaArquivos:
                 return False
 
         return True
+    
+    def nome_valido(self, nome):
+        nomes_invalidos = ["/", ".", "..", ">", ">>"]
+
+        if nome in nomes_invalidos:
+            return False
+
+        if "/" in nome:
+            return False
+
+        return True
 
     def alocar_bloco(self, dados):
         for indice in range(len(self.disco)):
@@ -158,6 +169,10 @@ class SistemaArquivos:
 
     # cria pasta
     def mkdir(self, nome):
+        if not self.nome_valido(nome):
+            print("Erro: nome inválido.")
+            return
+
         # no linux nao da pra criar uma pasta com msm nome de um arquivo ou de outro DIR.
         if nome in self.atual.filhos:
             print("Erro: Já existe um arquivo ou diretório com esse nome.")
@@ -169,6 +184,10 @@ class SistemaArquivos:
 
     # cria arquuivo
     def touch(self, nome):
+        if not self.nome_valido(nome):
+            print("Erro: nome inválido.")
+            return
+
         if nome in self.atual.filhos:
             print("Erro: Já existe um arquivo ou diretório com esse nome.")
         else:
@@ -204,6 +223,10 @@ class SistemaArquivos:
 
     # cria o arquivo e add conteudo
     def echo(self, conteudo, nome):
+        if not self.nome_valido(nome):
+            print("Erro: nome inválido.")
+            return
+
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             if self.tem_permissao(self.atual.filhos[nome], "w"):
                 self.gravar_conteudo(self.atual.filhos[nome], conteudo)
@@ -292,6 +315,10 @@ class SistemaArquivos:
 
     # copiar, duplicar o arquivo alvo em outro lugar
     def cp(self, nomeArqOrigem, nomeArqDestino):
+        if not self.nome_valido(nomeArqDestino):
+            print("Erro: nome inválido.")
+            return
+
         if nomeArqOrigem in self.atual.filhos:
             if self.atual.filhos[nomeArqOrigem].tipo == "arquivo":
                 arquivo_origem = self.atual.filhos[nomeArqOrigem]
@@ -333,6 +360,10 @@ class SistemaArquivos:
     def mv(self, origem, destino):
         if origem == destino:
             print("Erro: origem e destino sao iguais.")
+            return
+
+        if not self.nome_valido(destino):
+            print("Erro: nome inválido.")
             return
 
         if origem not in self.atual.filhos:
