@@ -229,7 +229,7 @@ def terminal():
     fs = SistemaArquivos()
 
     while True:
-        entrada = input("mini-fs:/$").strip()
+        entrada = input("mini-fs:/$ ").strip()
 
         if entrada.lower() == "exit":
             print("Encerrando o simulador.")
@@ -237,5 +237,11 @@ def terminal():
 
         elif entrada.lower() == "pwd":
             print(fs.pwd())
+
+        elif entrada.lower() == "ls":
+            fs.ls()
+
+        else:
+            print("Comando não reconhecido.")
 
 terminal()
