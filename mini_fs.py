@@ -306,6 +306,15 @@ def terminal():
                 arquivo = partes[indice + 1]
                 fs.echo(texto, arquivo)
 
+        elif comando == "rm":
+            if len(partes) < 2:
+                print("Erro: use rm <arquivo_ou_diretorio>")
+
+            elif len(partes) > 2:
+                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+            else:
+                fs.rm(partes[1])
+
         else:
             print("Comando não reconhecido.")
 
