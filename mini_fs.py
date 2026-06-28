@@ -173,6 +173,10 @@ class SistemaArquivos:
             print("Erro: nome inválido.")
             return
 
+        if not self.tem_permissao(self.atual, "w"):
+            print("Erro: Sem permissão de escrita no diretório atual.")
+            return
+
         # no linux nao da pra criar uma pasta com msm nome de um arquivo ou de outro DIR.
         if nome in self.atual.filhos:
             print("Erro: Já existe um arquivo ou diretório com esse nome.")
@@ -186,6 +190,10 @@ class SistemaArquivos:
     def touch(self, nome):
         if not self.nome_valido(nome):
             print("Erro: nome inválido.")
+            return
+
+        if not self.tem_permissao(self.atual, "w"):
+            print("Erro: Sem permissão de escrita no diretório atual.")
             return
 
         if nome in self.atual.filhos:
@@ -236,6 +244,10 @@ class SistemaArquivos:
             if nome in self.atual.filhos:
                 print("Erro: Já existe um arquivo ou diretório com esse nome.")
             else:
+                if not self.tem_permissao(self.atual, "w"):
+                    print("Erro: Sem permissão de escrita no diretório atual.")
+                    return
+
                 self.atual.filhos[nome] = No(nome, "arquivo")
                 self.atual.filhos[nome].pai = self.atual
                 self.gravar_conteudo(self.atual.filhos[nome], conteudo)
@@ -337,6 +349,10 @@ class SistemaArquivos:
                         self.liberar_blocos(self.atual.filhos[nome_final])
                     else:
                         print("Erro: Já existe um diretório com esse nome.")
+                        return
+                else:
+                    if not self.tem_permissao(self.atual, "w"):
+                        print("Erro: Sem permissão de escrita no diretório atual.")
                         return
 
                 self.atual.filhos[nome_final] = No(nome_final, "arquivo")
