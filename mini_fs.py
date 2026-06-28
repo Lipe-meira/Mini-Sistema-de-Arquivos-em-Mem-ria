@@ -272,6 +272,16 @@ def terminal():
             else:
                 fs.touch(partes[1])
 
+        elif comando == "cat":
+            if len(partes) < 2:
+                print("Erro: use cat <arquivo>")
+            elif len(partes) > 2:
+                print("Erro: o nome do arquivo não pode conter espaços.")
+            else:
+                fs.cat(partes[1])
+
+        
+
         else:
             print("Comando não reconhecido.")
 
