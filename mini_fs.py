@@ -315,6 +315,30 @@ def terminal():
             else:
                 fs.rm(partes[1])
 
+        elif comando == "cp":
+            if len(partes) < 3:
+                print("Erro: use cp <origem> <destino>")
+            elif len(partes) > 3:
+                print("Erro: o nome do arquivo não pode conter espaços.")
+            else:
+                fs.cp(partes[1], partes[2])
+
+        elif comando == "mv":
+            if len(partes) < 3:
+                print("Erro: use mv <origem> <destino>")
+            elif len(partes) > 3:
+                print("Erro: o nome do arquivo não pode conter espaços.")
+            else:
+                fs.mv(partes[1], partes[2])
+
+        elif comando == "chmod":
+            if len(partes) < 3:
+                print("Erro: use chmod <permissao> <arquivo_ou_diretorio>")
+            elif len(partes) > 3:
+                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+            else:
+                fs.chmod(partes[1], partes[2])
+
         else:
             print("Comando não reconhecido.")
 
