@@ -406,6 +406,10 @@ class SistemaArquivos:
                     print("Erro: Sem permissão de escrita no diretório de destino.")
                     return
 
+                if not self.tem_permissao(no_destino, "x"):
+                    print("Erro: Sem permissão de entrada no diretório de destino.")
+                    return
+
                 if origem in no_destino.filhos:
                     print("Erro: Já existe um item com esse nome no diretório de destino.")
                     return
