@@ -331,6 +331,10 @@ class SistemaArquivos:
 
     # move o arquivo OU renomeia
     def mv(self, origem, destino):
+        if origem == destino:
+            print("Erro: origem e destino sao iguais.")
+            return
+
         if origem not in self.atual.filhos:
             print("Erro: Arquivo ou diretório de origem não encontrado.")
             return
