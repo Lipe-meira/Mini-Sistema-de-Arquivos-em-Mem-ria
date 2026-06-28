@@ -231,15 +231,30 @@ def terminal():
     while True:
         entrada = input("mini-fs:/$ ").strip()
 
-        if entrada.lower() == "exit":
+        if entrada == "":
+            continue
+
+        partes = entrada.split()
+        comando = partes[0].lower()
+
+
+        if comando == "exit":
             print("Encerrando o simulador.")
             break
 
-        elif entrada.lower() == "pwd":
+        elif comando == "pwd":
             print(fs.pwd())
 
-        elif entrada.lower() == "ls":
+        elif comando == "ls":
             fs.ls()
+
+        elif comando == "mkdir":
+            if len(partes) < 2:
+                print("Erro: use mkdir <nome>")
+            elif len(partes) > 2:
+                print("Erro: o nome do diretório não pode conter espaços.")
+            else:
+                fs.mkdir(partes[1])
 
         else:
             print("Comando não reconhecido.")
