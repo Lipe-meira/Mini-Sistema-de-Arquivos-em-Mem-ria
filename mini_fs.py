@@ -161,6 +161,10 @@ class SistemaArquivos:
 
     # ls lista os arquivos e diretorios da pasta atual
     def ls(self):
+        if not self.tem_permissao(self.atual, "r"):
+            print("Erro: Sem permissão de leitura no diretório atual.")
+            return
+
         for nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "diretorio":
                 print("[DIR] " + nome)
