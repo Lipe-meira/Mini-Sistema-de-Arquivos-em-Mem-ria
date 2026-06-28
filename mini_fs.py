@@ -225,10 +225,17 @@ class SistemaArquivos:
             print("[ERRO]: Arquivo ou diretório não encontrado.")
 
 
-fs = SistemaArquivos()
+def terminal():
+    fs = SistemaArquivos()
 
-fs.touch("a.txt")
-fs.echo("oi", "a.txt")
-fs.cp("a.txt", "a.txt")
-fs.ls()
-fs.cat("a_copia.txt")
+    while True:
+        entrada = input("mini-fs:/$").strip()
+
+        if entrada.lower() == "exit":
+            print("Encerrando o simulador.")
+            break
+
+        elif entrada.lower() == "pwd":
+            print(fs.pwd())
+
+terminal()
