@@ -11,6 +11,7 @@ class No:
         self.filhos = {}
         self.pai = None
         self.permissoes = "rwx"
+        self.blocos = []
 
         # FCB
         agora = datetime.now()
@@ -39,6 +40,47 @@ class SistemaArquivos:
     def __init__(self):
         self.root = No("/", "diretorio")
         self.atual = self.root
+        self.tamanho_bloco = 4
+        self.disco = []
+
+    def alocar_bloco(self, dados):
+        for indice in range(len(self.disco)):
+            if self.disco[indice] is None:
+                self.disco[indice] = dados
+                return indice
+
+        self.disco.append(dados)
+        return len(self.disco) - 1
+
+    def liberar_blocos(self, no):
+        for indice in no.blocos:
+            if 0 <= indice < len(self.disco):
+                self.disco[indice] = None
+
+        no.blocos = []
+
+    def gravar_conteudo(self, no, conteudo):
+        self.liberar_blocos(no)
+        no.conteudo = conteudo
+
+        for inicio in range(0, len(conteudo), self.tamanho_bloco):
+            # inicio : ate onde vai alocar
+            parte = conteudo[inicio:inicio + self.tamanho_bloco]
+            indice = self.alocar_bloco(parte)
+            no.blocos.append(indice)
+
+        no.atualizar_tamanho()
+        no.atualizar_modificacao()
+
+    def ler_conteudo(self, no):
+        partes = []
+
+        for indice in no.blocos:
+            if 0 <= indice < len(self.disco) and self.disco[indice] is not None:
+                partes.append(self.disco[indice])
+
+        no.conteudo = "".join(partes)
+        return no.conteudo
 
     # pwd mostra o caminho completo da pasta atual
     def pwd(self):
@@ -110,9 +152,7 @@ class SistemaArquivos:
     def echo(self, conteudo, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             if "w" in self.atual.filhos[nome].permissoes:
-                self.atual.filhos[nome].conteudo = conteudo
-                self.atual.filhos[nome].atualizar_tamanho()
-                self.atual.filhos[nome].atualizar_modificacao()
+                self.gravar_conteudo(self.atual.filhos[nome], conteudo)
             else:
                 print("Erro: Sem permissão de escrita.")
         else:
@@ -121,9 +161,7 @@ class SistemaArquivos:
             else:
                 self.atual.filhos[nome] = No(nome, "arquivo")
                 self.atual.filhos[nome].pai = self.atual
-                self.atual.filhos[nome].conteudo = conteudo
-                self.atual.filhos[nome].atualizar_tamanho()
-                self.atual.filhos[nome].atualizar_modificacao()
+                self.gravar_conteudo(self.atual.filhos[nome], conteudo)
                 self.atual.atualizar_tamanho()
                 self.atual.atualizar_modificacao()
 
@@ -131,7 +169,7 @@ class SistemaArquivos:
     def cat(self, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             if "r" in self.atual.filhos[nome].permissoes:
-                print(self.atual.filhos[nome].conteudo)
+                print(self.ler_conteudo(self.atual.filhos[nome]))
                 self.atual.filhos[nome].atualizar_acesso()
             else:
                 print("Erro: Sem permissão de leitura.")
@@ -142,6 +180,7 @@ class SistemaArquivos:
     def rm(self, nome):
         if nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "arquivo":
+                self.liberar_blocos(self.atual.filhos[nome])
                 del self.atual.filhos[nome]
                 self.atual.atualizar_tamanho()
                 self.atual.atualizar_modificacao()
@@ -202,13 +241,20 @@ class SistemaArquivos:
                 else:
                     nome_final = nomeArqDestino
 
+                if nome_final in self.atual.filhos:
+                    if self.atual.filhos[nome_final].tipo == "arquivo":
+                        self.liberar_blocos(self.atual.filhos[nome_final])
+                    else:
+                        print("[ERRO]: Já existe um diretório com esse nome.")
+                        return
+
                 self.atual.filhos[nome_final] = No(nome_final, "arquivo")
                 self.atual.filhos[nome_final].pai = self.atual
-                self.atual.filhos[nome_final].conteudo = arquivo_origem.conteudo
                 self.atual.filhos[nome_final].permissoes = arquivo_origem.permissoes
                 self.atual.filhos[nome_final].tipo_dado = arquivo_origem.tipo_dado
-                self.atual.filhos[nome_final].atualizar_tamanho()
-                self.atual.filhos[nome_final].atualizar_modificacao()
+                self.gravar_conteudo(
+                    self.atual.filhos[nome_final], self.ler_conteudo(arquivo_origem)
+                )
                 arquivo_origem.atualizar_acesso()
                 self.atual.atualizar_tamanho()
                 self.atual.atualizar_modificacao()
@@ -298,9 +344,23 @@ class SistemaArquivos:
         print("Tipo de dado: " + no.tipo_dado)
         print("Tamanho: " + str(no.tamanho))
         print("Permissoes: " + no.permissoes)
+        print("Blocos: " + str(no.blocos))
         print("Criado em: " + self.formatar_data(no.data_criacao))
         print("Modificado em: " + self.formatar_data(no.data_modificacao))
         print("Acessado em: " + self.formatar_data(no.data_acesso))
+
+    def mostrar_disco(self):
+        print("Tamanho do bloco: " + str(self.tamanho_bloco))
+
+        if len(self.disco) == 0:
+            print("Disco vazio.")
+            return
+
+        for indice in range(len(self.disco)):
+            if self.disco[indice] is None:
+                print("Bloco " + str(indice) + ": LIVRE")
+            else:
+                print("Bloco " + str(indice) + ": " + self.disco[indice])
 
 
 def terminal():
@@ -325,6 +385,12 @@ def terminal():
 
         elif comando == "ls":
             fs.ls()
+
+        elif comando == "disco":
+            if len(partes) > 1:
+                print("Erro: use apenas disco")
+            else:
+                fs.mostrar_disco()
 
         elif comando == "mkdir":
             if len(partes) < 2:
