@@ -346,6 +346,10 @@ class SistemaArquivos:
 
                 if nome_final in self.atual.filhos:
                     if self.atual.filhos[nome_final].tipo == "arquivo":
+                        if not self.tem_permissao(self.atual.filhos[nome_final], "w"):
+                            print("Erro: Sem permissão de escrita no arquivo de destino.")
+                            return
+
                         self.liberar_blocos(self.atual.filhos[nome_final])
                     else:
                         print("Erro: Já existe um diretório com esse nome.")
