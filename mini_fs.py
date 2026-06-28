@@ -280,7 +280,31 @@ def terminal():
             else:
                 fs.cat(partes[1])
 
-        
+        elif comando == "echo":
+            if ">" not in partes:
+                print("Erro: use echo <texto> > <arquivo>")
+                continue
+
+            if partes.count(">") != 1:
+                print("Erro: use apenas um > no formato echo <texto> > <arquivo>")
+                continue
+
+            else:
+                indice = partes.index(">")
+
+            if indice == 1:
+                print("Erro: informe o texto antes do >")
+
+            elif indice + 1 >= len(partes):
+                print("Erro: informe o nome do arquivo depois do >")
+
+            elif indice + 2 < len(partes):
+                print("Erro: o nome do arquivo não pode conter espaços.")
+                
+            else:
+                texto = " ".join(partes[1:indice])
+                arquivo = partes[indice + 1]
+                fs.echo(texto, arquivo)
 
         else:
             print("Comando não reconhecido.")
