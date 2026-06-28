@@ -1,4 +1,9 @@
+from datetime import datetime
+
+
 class No:
+    proximo_inode = 1
+
     def __init__(self, nome, tipo):
         self.nome = nome
         self.tipo = tipo  # "arquivo" ou "diretorio"
@@ -6,6 +11,28 @@ class No:
         self.filhos = {}
         self.pai = None
         self.permissoes = "rwx"
+
+        # FCB
+        agora = datetime.now()
+        self.id_inode = No.proximo_inode
+        No.proximo_inode += 1
+        self.tamanho = 0
+        self.data_criacao = agora
+        self.data_modificacao = agora
+        self.data_acesso = agora
+        self.tipo_dado = "caractere"
+
+    def atualizar_acesso(self):
+        self.data_acesso = datetime.now()
+
+    def atualizar_modificacao(self):
+        self.data_modificacao = datetime.now()
+
+    def atualizar_tamanho(self):
+        if self.tipo == "arquivo":
+            self.tamanho = len(self.conteudo)
+        else:
+            self.tamanho = len(self.filhos)
 
 
 class SistemaArquivos:
@@ -41,6 +68,8 @@ class SistemaArquivos:
         else:
             self.atual.filhos[nome] = No(nome, "diretorio")
             self.atual.filhos[nome].pai = self.atual
+            self.atual.atualizar_tamanho()
+            self.atual.atualizar_modificacao()
 
     # cria arquuivo
     def touch(self, nome):
@@ -49,6 +78,8 @@ class SistemaArquivos:
         else:
             self.atual.filhos[nome] = No(nome, "arquivo")
             self.atual.filhos[nome].pai = self.atual
+            self.atual.atualizar_tamanho()
+            self.atual.atualizar_modificacao()
 
     # mudar de diretório/pasta.
     def cd(self, nome):
@@ -57,14 +88,17 @@ class SistemaArquivos:
                 print("Erro: Já está no diretório raiz.")
             else:
                 self.atual = self.atual.pai
+                self.atual.atualizar_acesso()
 
         # nome da raiz
         elif nome == "/":
             self.atual = self.root
+            self.atual.atualizar_acesso()
         elif nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "diretorio":
                 if "x" in self.atual.filhos[nome].permissoes:
                     self.atual = self.atual.filhos[nome]
+                    self.atual.atualizar_acesso()
                 else:
                     print("Erro: Sem permissão de entrada.")
             else:
@@ -77,6 +111,8 @@ class SistemaArquivos:
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             if "w" in self.atual.filhos[nome].permissoes:
                 self.atual.filhos[nome].conteudo = conteudo
+                self.atual.filhos[nome].atualizar_tamanho()
+                self.atual.filhos[nome].atualizar_modificacao()
             else:
                 print("Erro: Sem permissão de escrita.")
         else:
@@ -86,12 +122,17 @@ class SistemaArquivos:
                 self.atual.filhos[nome] = No(nome, "arquivo")
                 self.atual.filhos[nome].pai = self.atual
                 self.atual.filhos[nome].conteudo = conteudo
+                self.atual.filhos[nome].atualizar_tamanho()
+                self.atual.filhos[nome].atualizar_modificacao()
+                self.atual.atualizar_tamanho()
+                self.atual.atualizar_modificacao()
 
     # mostra o conteudo de um arquivo
     def cat(self, nome):
         if nome in self.atual.filhos and self.atual.filhos[nome].tipo == "arquivo":
             if "r" in self.atual.filhos[nome].permissoes:
                 print(self.atual.filhos[nome].conteudo)
+                self.atual.filhos[nome].atualizar_acesso()
             else:
                 print("Erro: Sem permissão de leitura.")
         else:
@@ -102,12 +143,16 @@ class SistemaArquivos:
         if nome in self.atual.filhos:
             if self.atual.filhos[nome].tipo == "arquivo":
                 del self.atual.filhos[nome]
+                self.atual.atualizar_tamanho()
+                self.atual.atualizar_modificacao()
                 print("Arquivo removido com sucesso.")
             elif (
                 self.atual.filhos[nome].tipo == "diretorio"
                 and self.atual.filhos[nome].filhos == {}
             ):
                 del self.atual.filhos[nome]
+                self.atual.atualizar_tamanho()
+                self.atual.atualizar_modificacao()
                 print("Diretorio removido com sucesso.")
             else:
                 print("[ERRO]: Diretório não está vazio.")
@@ -150,19 +195,23 @@ class SistemaArquivos:
     def cp(self, nomeArqOrigem, nomeArqDestino):
         if nomeArqOrigem in self.atual.filhos:
             if self.atual.filhos[nomeArqOrigem].tipo == "arquivo":
+                arquivo_origem = self.atual.filhos[nomeArqOrigem]
+
                 if nomeArqOrigem == nomeArqDestino:
-                    copia_nome = self.gerar_nome_copia(nomeArqOrigem)
-                    self.atual.filhos[copia_nome] = No(copia_nome, "arquivo")
-                    self.atual.filhos[copia_nome].pai = self.atual
-                    self.atual.filhos[copia_nome].conteudo = self.atual.filhos[
-                        nomeArqOrigem
-                    ].conteudo
+                    nome_final = self.gerar_nome_copia(nomeArqOrigem)
                 else:
-                    self.atual.filhos[nomeArqDestino] = No(nomeArqDestino, "arquivo")
-                    self.atual.filhos[nomeArqDestino].pai = self.atual
-                    self.atual.filhos[nomeArqDestino].conteudo = self.atual.filhos[
-                        nomeArqOrigem
-                    ].conteudo
+                    nome_final = nomeArqDestino
+
+                self.atual.filhos[nome_final] = No(nome_final, "arquivo")
+                self.atual.filhos[nome_final].pai = self.atual
+                self.atual.filhos[nome_final].conteudo = arquivo_origem.conteudo
+                self.atual.filhos[nome_final].permissoes = arquivo_origem.permissoes
+                self.atual.filhos[nome_final].tipo_dado = arquivo_origem.tipo_dado
+                self.atual.filhos[nome_final].atualizar_tamanho()
+                self.atual.filhos[nome_final].atualizar_modificacao()
+                arquivo_origem.atualizar_acesso()
+                self.atual.atualizar_tamanho()
+                self.atual.atualizar_modificacao()
 
                 print("Arquivo copiado com sucesso.")
             else:
@@ -192,6 +241,11 @@ class SistemaArquivos:
 
                 no_origem.pai = no_destino
                 no_destino.filhos[origem] = no_origem
+                no_origem.atualizar_modificacao()
+                no_destino.atualizar_tamanho()
+                no_destino.atualizar_modificacao()
+                self.atual.atualizar_tamanho()
+                self.atual.atualizar_modificacao()
 
                 print("Movido com sucesso.")
                 return
@@ -206,6 +260,8 @@ class SistemaArquivos:
         no_origem.nome = destino
         no_origem.pai = self.atual
         self.atual.filhos[destino] = no_origem
+        no_origem.atualizar_modificacao()
+        self.atual.atualizar_modificacao()
 
         print("Renomeado com sucesso.")
 
@@ -216,6 +272,7 @@ class SistemaArquivos:
                 if novaPermissao in ["rwx", "rw-", "r--", "r-x",
                                     "-wx", "-w-", "--x", "---"]:
                     self.atual.filhos[nome].permissoes = novaPermissao
+                    self.atual.filhos[nome].atualizar_modificacao()
                     print("Permissao alterada com sucesso.")
                 else:
                     print("[ERRO]: Permissão inválida.")
@@ -223,6 +280,27 @@ class SistemaArquivos:
                 print("[ERRO]: Permissão inválida.")
         else:
             print("[ERRO]: Arquivo ou diretório não encontrado.")
+
+    def formatar_data(self, data):
+        return data.strftime("%Y-%m-%d %H:%M:%S")
+
+    def stat(self, nome):
+        if nome not in self.atual.filhos:
+            print("[ERRO]: Arquivo ou diretório não encontrado.")
+            return
+
+        no = self.atual.filhos[nome]
+        no.atualizar_acesso()
+
+        print("Nome: " + no.nome)
+        print("Inode: " + str(no.id_inode))
+        print("Tipo: " + no.tipo)
+        print("Tipo de dado: " + no.tipo_dado)
+        print("Tamanho: " + str(no.tamanho))
+        print("Permissoes: " + no.permissoes)
+        print("Criado em: " + self.formatar_data(no.data_criacao))
+        print("Modificado em: " + self.formatar_data(no.data_modificacao))
+        print("Acessado em: " + self.formatar_data(no.data_acesso))
 
 
 def terminal():
@@ -279,6 +357,14 @@ def terminal():
                 print("Erro: o nome do arquivo não pode conter espaços.")
             else:
                 fs.cat(partes[1])
+
+        elif comando == "stat":
+            if len(partes) < 2:
+                print("Erro: use stat <arquivo_ou_diretorio>")
+            elif len(partes) > 2:
+                print("Erro: o nome do arquivo ou diretório não pode conter espaços.")
+            else:
+                fs.stat(partes[1])
 
         elif comando == "echo":
             if ">" not in partes:
@@ -342,4 +428,5 @@ def terminal():
         else:
             print("Comando não reconhecido.")
 
-terminal()
+if __name__ == "__main__":
+    terminal()
