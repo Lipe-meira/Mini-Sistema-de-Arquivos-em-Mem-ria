@@ -21,7 +21,10 @@ class No:
         self.data_criacao = agora
         self.data_modificacao = agora
         self.data_acesso = agora
-        self.tipo_dado = "caractere"
+        if tipo == "arquivo":
+            self.tipo_dado = "caractere"
+        else:
+            self.tipo_dado = "diretorio"
 
     def atualizar_acesso(self):
         self.data_acesso = datetime.now()
