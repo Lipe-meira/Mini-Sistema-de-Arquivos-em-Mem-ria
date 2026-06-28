@@ -264,6 +264,14 @@ def terminal():
             else:
                 fs.cd(partes[1])
 
+        elif comando == "touch":
+            if len(partes) < 2:
+                print("Erro: use touch <arquivo>")
+            elif len (partes) > 2:
+                print("Erros: o nome do arquivo não pode conter espaços.")
+            else:
+                fs.touch(partes[1])
+
         else:
             print("Comando não reconhecido.")
 
