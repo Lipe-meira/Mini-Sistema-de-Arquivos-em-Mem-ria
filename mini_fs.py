@@ -229,7 +229,7 @@ def terminal():
     fs = SistemaArquivos()
 
     while True:
-        entrada = input("mini-fs:/$ ").strip()
+        entrada = input(f"mini-fs:{fs.pwd()}$ ").strip()
 
         if entrada == "":
             continue
@@ -255,6 +255,14 @@ def terminal():
                 print("Erro: o nome do diretório não pode conter espaços.")
             else:
                 fs.mkdir(partes[1])
+
+        elif comando == "cd":
+            if len(partes) < 2:
+                print("Erro: use cd <diretorio>")
+            elif len(partes) > 2:
+                print("Erro: o nome do diretório não pode conter espaços.")
+            else:
+                fs.cd(partes[1])
 
         else:
             print("Comando não reconhecido.")
