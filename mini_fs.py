@@ -10,7 +10,7 @@ class No:
         self.conteudo = ""
         self.filhos = {}
         self.pai = None
-        self.permissoes = 0o777
+        self.permissoes = 0o777 # perm padrao em octal: RWX, perm total
         self.owner = "felipe"
         self.group = "alunos"
         self.blocos = []
@@ -51,6 +51,8 @@ class SistemaArquivos:
         self.grupo_atual = "alunos"
 
     def obter_permissao_usuario(self, no):
+
+        # quantos bits tera que deslocar
         if self.usuario_atual == no.owner:
             deslocamento = 6
         elif self.grupo_atual == no.group:
@@ -58,7 +60,8 @@ class SistemaArquivos:
         else:
             deslocamento = 0
 
-        return (no.permissoes >> deslocamento) & 0b111
+        # verifica a role do user e dps extrai quais perm ele tem acesso
+        return (no.permissoes >> deslocamento) & 0b111 
 
     def tem_permissao(self, no, permissao):
         valores_permissao = {"r": 4, "w": 2, "x": 1}
